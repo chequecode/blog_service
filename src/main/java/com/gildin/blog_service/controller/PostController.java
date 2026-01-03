@@ -32,14 +32,14 @@ public class PostController {
     public ResponseEntity<Object> createPost(@RequestBody PostDTO postDTO) {
         try {
             Post createdPost = postService.createPost(convertToEntity(postDTO));
-            return ResponseEntity.status(HttpStatus.CREATED).body(convertToDTO(createdPost)); //201
+            return ResponseEntity.status(HttpStatus.CREATED).body(convertToDTO(createdPost));
         } catch (DataIntegrityViolationException e) {
             ErrorMessage errorMessage = new ErrorMessage(e.getMessage());
             System.out.println("=============================" + errorMessage + "=========================");
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorMessage); //400
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorMessage);
         } catch (Exception e) {
             ErrorMessage errorMessage = new ErrorMessage(e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorMessage); //500
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorMessage);
         }
     }
 
@@ -88,12 +88,13 @@ public class PostController {
         }
         post.setAuthorUser(userRepository.findById(postDTO.getAuthorUser()).orElseThrow(() -> new RuntimeException("avtor ne naiden")));
         post.setContentText(postDTO.getContentText());
-        if (postDTO.getLikedUsersIds() != null) {
-            List<Comment> comments = postDTO.getLikedUsersIds().stream()
-                    .map(id -> commentRepository.findById(id).orElseThrow(() -> new RuntimeException("post ne naiden")))
+        if (postDTO.getcommentsIds() != null) {
+            List<Comment> comments = postDTO.getcommentsIds().stream()
+                    .map(id -> commentRepository.findById(id).orElseThrow(() -> new RuntimeException("comment ne naiden")))
                     .collect(Collectors.toList());
             post.setComments(comments);
         }
+        post.setTitle(postDTO.getTitle());
         return post;
     }
 
@@ -108,6 +109,7 @@ public class PostController {
         if (post.getComments() != null) {
             postDTO.setcommentsIds(post.getComments().stream().map(Comment::getId).collect(Collectors.toList()));
         }
+        postDTO.setTitle(post.getTitle());
         return postDTO;
     }
 }

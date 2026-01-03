@@ -2,6 +2,10 @@ package com.gildin.blog_service.entity;
 
 import jakarta.persistence.*;
 
+import javax.validation.constraints.Email;
+import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.Size;
+import java.util.ArrayList;
 import java.util.List;
 
 @Entity
@@ -17,28 +21,30 @@ public class User {
             joinColumns = @JoinColumn(name = "user_id"),
             inverseJoinColumns = @JoinColumn(name = "post_id")
     )
-    private List<Post> likedPosts;
+    private List<Post> likedPosts = new ArrayList<>();
 
     @OneToMany(mappedBy = "authorUser")
-    private List<Post> userPosts;
+    private List<Post> userPosts = new ArrayList<>();
 
     @OneToMany(mappedBy = "authorUser")
-    private List<Comment> userComments;
+    private List<Comment> userComments = new ArrayList<>();
 
     @Column(nullable = false)
-//    @NotBlank(message = "email is not valid")
+    @NotBlank(message = "email is required")
+    @Email(message = "email should be valid")
     private String email;
 
-    @Column(nullable = false)
-//    @NotBlank(message = "username is not valid")
+    @Column(nullable = false, unique = true)
+    @NotBlank(message = "username is not valid")
     private String username;
 
     @Column(nullable = false)
-//    @NotBlank(message = "password is not valid")
+    @NotBlank(message = "password is not valid")
+    @Size(min = 6, message = "Password must be at least 6 characters")
     private String password;
 
     @Column(nullable = false)
-    @Enumerated(EnumType.STRING) // шобы в БД были значения типа стринг, а не цифры 0-1
+    @Enumerated(EnumType.STRING)
     private RoleType role;
 
 

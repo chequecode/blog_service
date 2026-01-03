@@ -2,6 +2,7 @@ package com.gildin.blog_service.entity;
 
 import jakarta.persistence.*;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Entity
@@ -17,7 +18,7 @@ public class Post {
             joinColumns = @JoinColumn(name = "post_id"),
             inverseJoinColumns = @JoinColumn(name = "user_id")
     )
-    private List<User> likedUsers;
+    private List<User> likedUsers = new ArrayList<>();
 
     @ManyToOne
     @JoinColumn(name = "user_id")
@@ -27,7 +28,7 @@ public class Post {
     private String contentText;
 
     @OneToMany(mappedBy = "commentedPost")
-    private List<Comment> comments;
+    private List<Comment> comments = new ArrayList<>();
 
     private String title;
 
