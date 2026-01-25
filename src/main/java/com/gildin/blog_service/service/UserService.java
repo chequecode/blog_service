@@ -3,6 +3,7 @@ package com.gildin.blog_service.service;
 import com.gildin.blog_service.entity.User;
 import com.gildin.blog_service.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -13,6 +14,8 @@ public class UserService {
 
     @Autowired
     private UserRepository userRepository;
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
     public User createUser(User user) {
         return userRepository.save(user);
@@ -20,13 +23,16 @@ public class UserService {
 
     public User updateUser(Long id, User userDetails) {
         User user = userRepository.findById(id).orElseThrow(() -> new RuntimeException("user not found"));
-        user.setEmail(userDetails.getEmail());
-        user.setUsername(userDetails.getUsername());
-        user.setPassword((userDetails.getPassword()));
-        user.setUserComments(userDetails.getUserComments());
-        user.setUserPosts(userDetails.getUserPosts());
-        user.setLikedPosts(userDetails.getLikedPosts());
-        user.setRole(userDetails.getRole());
+        if (userDetails.getEmail() != null) user.setEmail(userDetails.getEmail());
+        if (userDetails.getUsername() != null) user.setUsername(userDetails.getUsername());
+        if (userDetails.getPassword() != null && !userDetails.getPassword().isEmpty()) {
+            user.setPassword(passwordEncoder.encode(userDetails.getPassword()));
+        }
+        if (userDetails.getUserComments() != null) user.setUserComments(userDetails.getUserComments());
+        if (userDetails.getUserPosts() != null) user.setUserPosts(userDetails.getUserPosts());
+        if (userDetails.getLikedPosts() != null) user.setLikedPosts(userDetails.getLikedPosts());
+        if (userDetails.getRole() != null) user.setRole(userDetails.getRole());
+
         return userRepository.save(user);
     }
 

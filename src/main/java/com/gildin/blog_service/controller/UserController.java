@@ -7,6 +7,7 @@ import com.gildin.blog_service.entity.User;
 import com.gildin.blog_service.exceptions.ErrorMessage;
 import com.gildin.blog_service.repository.CommentRepository;
 import com.gildin.blog_service.repository.PostRepository;
+import com.gildin.blog_service.repository.UserRepository;
 import com.gildin.blog_service.service.UserService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,6 +15,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -30,17 +32,28 @@ public class UserController {
     private UserService userService;
 
     @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
     private PostRepository postRepository;
 
     @Autowired
     private CommentRepository commentRepository;
 
     @PostMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Object> createUser(@RequestBody UserDTO userDTO) {
         logger.info("POST /user - Creating new user with username: {}", userDTO.getUsername());
         logger.debug("User details: email={}, role={}", userDTO.getEmail(), userDTO.getRole());
 
         try {
+            if (userRepository.findByUsername(userDTO.getUsername()).isPresent()) {
+                return ResponseEntity.badRequest().body("Username already taken");
+            }
+            if (userRepository.findByEmail(userDTO.getEmail()).isPresent()) {
+                return ResponseEntity.badRequest().body("Email already taken");
+            }
+
             User createdUser = userService.createUser(convertToEntity(userDTO));
             logger.info("User created successfully with ID: {}", createdUser.getId());
             return ResponseEntity.status(HttpStatus.CREATED).body(convertToDTO(createdUser)); //201
@@ -62,11 +75,13 @@ public class UserController {
     }
 
     @GetMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public List<UserDTO> getAllUsers() {
         return userService.getAllUsers().stream().map(this::convertToDTO).collect(Collectors.toList());
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN') or authentication.principal.id == #id")
     public ResponseEntity<Object> updateUser(@PathVariable Long id, @RequestBody User user) {
         try {
             User updatedUser = userService.updateUser(id, user);
@@ -84,6 +99,7 @@ public class UserController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
         userService.deleteUser(id);
         return ResponseEntity.noContent().build();
