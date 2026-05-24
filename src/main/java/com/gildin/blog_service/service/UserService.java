@@ -1,8 +1,15 @@
 package com.gildin.blog_service.service;
 
+import com.gildin.blog_service.dto.create.CreateUserDTO;
+import com.gildin.blog_service.dto.response.UserDTO;
+import com.gildin.blog_service.dto.update.UpdateUserDTO;
 import com.gildin.blog_service.entity.User;
+import com.gildin.blog_service.exceptions.ConflictException;
+import com.gildin.blog_service.exceptions.ResourceNotFoundException;
+import com.gildin.blog_service.mapper.UserMapper;
 import com.gildin.blog_service.repository.UserRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -12,44 +19,57 @@ import java.util.Optional;
 @Service
 public class UserService {
 
-    @Autowired
-    private UserRepository userRepository;
-    @Autowired
-    private PasswordEncoder passwordEncoder;
+    private final UserRepository userRepository;
+    private final UserMapper userMapper;
 
-    public User createUser(User user) {
-        return userRepository.save(user);
+    public UserService(UserRepository userRepository, UserMapper userMapper) {
+        this.userRepository = userRepository;
+        this.userMapper = userMapper;
     }
 
-    public User updateUser(Long id, User userDetails) {
-        User user = userRepository.findById(id).orElseThrow(() -> new RuntimeException("user not found"));
-        if (userDetails.getEmail() != null) user.setEmail(userDetails.getEmail());
-        if (userDetails.getUsername() != null) user.setUsername(userDetails.getUsername());
-        if (userDetails.getPassword() != null && !userDetails.getPassword().isEmpty()) {
-            user.setPassword(passwordEncoder.encode(userDetails.getPassword()));
+    public UserDTO createUser(CreateUserDTO createUserDTO) {
+        if (userRepository.existsByUsername(createUserDTO.getUsername())) {
+            throw new ConflictException("пользователь с таким ником уже существует: " + createUserDTO.getUsername());
+        } else if (userRepository.existsByEmail(createUserDTO.getEmail())) {
+            throw new ConflictException("пользователь с такой почтой уже существует: " + createUserDTO.getEmail());
         }
-        if (userDetails.getUserComments() != null) user.setUserComments(userDetails.getUserComments());
-        if (userDetails.getUserPosts() != null) user.setUserPosts(userDetails.getUserPosts());
-        if (userDetails.getLikedPosts() != null) user.setLikedPosts(userDetails.getLikedPosts());
-        if (userDetails.getRole() != null) user.setRole(userDetails.getRole());
-
-        return userRepository.save(user);
+        User savedUser = userRepository.save(userMapper.toEntity(createUserDTO));
+        return userMapper.toDTO(savedUser);
     }
 
-    public List<User> getAllUsers() {
-        return userRepository.findAll();
+    public UserDTO updateUser(Long id, UpdateUserDTO updateUserDTO) {
+        User user = userRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("пользователь не найден: " + id));
+        if (userRepository.existsByUsername(updateUserDTO.getUsername())) {
+            throw new ConflictException("пользователь с таким ником уже существует, обновить нельзя: " + updateUserDTO.getUsername());
+        } else if (userRepository.existsByEmail(updateUserDTO.getEmail())) {
+            throw new ConflictException("пользователь с такой почтой уже существует, обновить нельзя: " + updateUserDTO.getEmail());
+        }
+        userMapper.updateFromUpdateDto(updateUserDTO, user);
+        userRepository.save(user);
+        return userMapper.toDTO(user);
     }
 
-    public Optional<User> getUserById(Long id) {
-        return userRepository.findById(id);
+    public Page<UserDTO> getAllUsers(Pageable pageable) {
+        return userRepository.findAll(pageable).map(userMapper::toDTO);
+    }
+
+    public UserDTO getUserById(Long id) {
+        User user = userRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("user not found by id: " + id));
+        return userMapper.toDTO(user);
+    }
+
+    public UserDTO getUserByUsername(String username) {
+        User user = userRepository.findByUsername(username).orElseThrow(() -> new ResourceNotFoundException("пользователь с таким ником не найден: " + username));
+        return userMapper.toDTO(user);
+    }
+
+    public UserDTO getUserByEmail(String email) {
+        User user = userRepository.findByEmail(email).orElseThrow(() -> new ResourceNotFoundException("пользователь с такой почтой не найден: " + email));
+        return userMapper.toDTO(user);
     }
 
     public void deleteUser(Long id) {
-        User user = userRepository.findById(id).orElseThrow(() -> new RuntimeException("user not found"));
+        User user = userRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("user not found by id: " + id));
         userRepository.delete(user);
-    }
-
-    public Optional<User> findByUsername(String username) {
-        return userRepository.findByUsername(username);
     }
 }

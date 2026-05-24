@@ -1,8 +1,8 @@
 package com.gildin.blog_service.controller;
 
-import com.gildin.blog_service.dto.SignInRequest;
-import com.gildin.blog_service.dto.SignUpRequest;
-import com.gildin.blog_service.entity.RoleType;
+import com.gildin.blog_service.dto.request.SignInRequest;
+import com.gildin.blog_service.dto.request.SignUpRequest;
+import com.gildin.blog_service.enumTypes.RoleType;
 import com.gildin.blog_service.entity.User;
 import com.gildin.blog_service.repository.UserRepository;
 import com.gildin.blog_service.security.JwtCore;

@@ -1,5 +1,7 @@
 package com.gildin.blog_service.entity;
 
+import com.gildin.blog_service.enumTypes.RoleType;
+import com.gildin.blog_service.enumTypes.TeamRole;
 import jakarta.persistence.*;
 
 import javax.validation.constraints.Email;
@@ -47,12 +49,16 @@ public class User {
     @Enumerated(EnumType.STRING)
     private RoleType role;
 
+    @Column(nullable = false)
+    @Enumerated(EnumType.STRING)
+    private TeamRole teamRole;
+
 
 
     public User() {
     }
 
-    public User(Long id, String username, String email, String password, List<Post> userPosts, List<Comment> userComments, List<Post> likedPosts, RoleType role) {
+    public User(TeamRole teamRole, Long id, String username, String email, String password, List<Post> userPosts, List<Comment> userComments, List<Post> likedPosts, RoleType role) {
         this.id = id;
         this.username = username;
         this.email = email;
@@ -61,6 +67,15 @@ public class User {
         this.userComments = userComments;
         this.likedPosts = likedPosts;
         this.role = role;
+        this.teamRole = teamRole;
+    }
+
+    public TeamRole getTeamRole() {
+        return teamRole;
+    }
+
+    public void setTeamRole(TeamRole teamRole) {
+        this.teamRole = teamRole;
     }
 
     public String getUsername() {

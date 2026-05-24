@@ -1,115 +1,57 @@
 package com.gildin.blog_service.controller;
 
-import com.gildin.blog_service.dto.PostDTO;
-import com.gildin.blog_service.entity.Comment;
-import com.gildin.blog_service.entity.Post;
-import com.gildin.blog_service.entity.User;
-import com.gildin.blog_service.exceptions.ErrorMessage;
-import com.gildin.blog_service.repository.CommentRepository;
-import com.gildin.blog_service.repository.UserRepository;
+import com.gildin.blog_service.dto.create.CreatePostDTO;
+import com.gildin.blog_service.dto.response.PostDTO;
+import com.gildin.blog_service.dto.update.UpdatePostDTO;
 import com.gildin.blog_service.service.PostService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
-import java.util.Optional;
-import java.util.stream.Collectors;
+import javax.validation.Valid;
 
 @RestController
 @RequestMapping("/posts")
 public class PostController {
     @Autowired
     private PostService postService;
-    @Autowired
-    private UserRepository userRepository;
-    @Autowired
-    private CommentRepository commentRepository;
+
+    @GetMapping("/by-title/{title}")
+    public ResponseEntity<PostDTO> getPostByTitle(@PathVariable("title") String title) {
+        return ResponseEntity.ok(postService.getPostByTitle(title));
+    }
 
     @PostMapping
-    public ResponseEntity<Object> createPost(@RequestBody PostDTO postDTO) {
-        try {
-            Post createdPost = postService.createPost(convertToEntity(postDTO));
-            return ResponseEntity.status(HttpStatus.CREATED).body(convertToDTO(createdPost));
-        } catch (DataIntegrityViolationException e) {
-            ErrorMessage errorMessage = new ErrorMessage(e.getMessage());
-            System.out.println("=============================" + errorMessage + "=========================");
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorMessage);
-        } catch (Exception e) {
-            ErrorMessage errorMessage = new ErrorMessage(e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorMessage);
-        }
+    public ResponseEntity<PostDTO> createPost(@RequestBody @Valid CreatePostDTO createPostDTO) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(postService.createPost(createPostDTO));
+    }
+
+    @GetMapping("/{username}")
+    public Page<PostDTO> getPostsByUsername(@PathVariable String username, Pageable pageable) {
+        return postService.findPostsByUsername(username, pageable);
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<PostDTO> getPostById(@PathVariable Long id) {
-        Optional<Post> post = postService.getPostById(id);
-        return post.map(this::convertToDTO).map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
+        return ResponseEntity.ok(postService.getPostById(id));
     }
 
     @GetMapping
-    public List<PostDTO> getAllPosts() {
-        return postService.getAllPosts().stream().map(this::convertToDTO).collect(Collectors.toList());
+    public Page<PostDTO> getAllPosts(Pageable pageable) {
+        return postService.getAllPosts(pageable);
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Object> updatePost(@PathVariable Long id, @RequestBody Post post) {
-        try {
-            Post updatedPost = postService.updatePost(id, post);
-            return ResponseEntity.ok(updatedPost);
-        } catch (DataIntegrityViolationException e) {
-            ErrorMessage errorMessage = new ErrorMessage(e.getMessage());
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorMessage);
-        } catch (RuntimeException e) {
-            ErrorMessage errorMessage = new ErrorMessage(e.getMessage());
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorMessage);
-        } catch (Exception e) {
-            ErrorMessage errorMessage = new ErrorMessage(e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorMessage);
-        }
+    public ResponseEntity<PostDTO> updatePost(@PathVariable Long id, @RequestBody @Valid UpdatePostDTO updatePostDTO) {
+        return ResponseEntity.ok(postService.updatePost(id, updatePostDTO));
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deletePost(@PathVariable Long id) {
         postService.deletePost(id);
         return ResponseEntity.noContent().build();
-    }
-
-    private Post convertToEntity(PostDTO postDTO) {
-        Post post = new Post();
-        post.setId(postDTO.getId());
-        if (postDTO.getLikedUsersIds() != null) {
-            List<User> likedUsers = postDTO.getLikedUsersIds().stream()
-                    .map(id -> userRepository.findById(id).orElseThrow(() -> new RuntimeException("post ne naiden")))
-                    .collect(Collectors.toList());
-            post.setLikedUsers(likedUsers);
-        }
-        post.setAuthorUser(userRepository.findById(postDTO.getAuthorUser()).orElseThrow(() -> new RuntimeException("avtor ne naiden")));
-        post.setContentText(postDTO.getContentText());
-        if (postDTO.getcommentsIds() != null) {
-            List<Comment> comments = postDTO.getcommentsIds().stream()
-                    .map(id -> commentRepository.findById(id).orElseThrow(() -> new RuntimeException("comment ne naiden")))
-                    .collect(Collectors.toList());
-            post.setComments(comments);
-        }
-        post.setTitle(postDTO.getTitle());
-        return post;
-    }
-
-    private PostDTO convertToDTO(Post post) {
-        PostDTO postDTO = new PostDTO();
-        postDTO.setId(post.getId());
-        if (post.getLikedUsers() != null) {
-            postDTO.setLikedUsersIds(post.getLikedUsers().stream().map(User::getId).collect(Collectors.toList()));
-        }
-        postDTO.setAuthorUser(post.getAuthorUser().getId());
-        postDTO.setContentText(post.getContentText());
-        if (post.getComments() != null) {
-            postDTO.setcommentsIds(post.getComments().stream().map(Comment::getId).collect(Collectors.toList()));
-        }
-        postDTO.setTitle(post.getTitle());
-        return postDTO;
     }
 }

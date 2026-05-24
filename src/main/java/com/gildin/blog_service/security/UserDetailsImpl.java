@@ -1,6 +1,6 @@
 package com.gildin.blog_service.security;
 
-import com.gildin.blog_service.entity.RoleType;
+import com.gildin.blog_service.enumTypes.RoleType;
 import com.gildin.blog_service.entity.User;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;

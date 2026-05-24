@@ -1,5 +1,6 @@
 package com.gildin.blog_service.entity;
 
+import com.gildin.blog_service.enumTypes.PostType;
 import jakarta.persistence.*;
 
 import java.util.ArrayList;
@@ -32,15 +33,26 @@ public class Post {
 
     private String title;
 
+    private PostType postType;
+
     public Post() {}
 
-    public Post(Long id, List<User> likedUsers, User authorUser, String contentText, List<Comment> comments, String title) {
+    public Post(PostType postType, Long id, List<User> likedUsers, User authorUser, String contentText, List<Comment> comments, String title) {
         this.id = id;
         this.likedUsers = likedUsers;
         this.authorUser = authorUser;
         this.contentText = contentText;
         this.comments = comments;
         this.title = title;
+        this.postType = postType;
+    }
+
+    public PostType getPostType() {
+        return postType;
+    }
+
+    public void setPostType(PostType postType) {
+        this.postType = postType;
     }
 
     public Long getId() {
